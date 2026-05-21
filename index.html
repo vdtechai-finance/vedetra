@@ -241,8 +241,18 @@ tbody td{padding:7px 10px;}
 <script>
 const PAIRS = ['XAUUSD','EURUSD','GBPUSD','USDCHF','USDJPY','USDCNH'];
 const TFS   = ['H4','H1','M30','M15','M5','M1'];
-const TF_MAX = {H4:5, H1:6, M30:3, M15:3, M5:6, M1:3};
-const TF_PASS= {H4:4, H1:5, M30:3, M15:3, M5:5, M1:3}; // Pass threshold per TF
+const TF_MAX = {H4:3, H1:3, M30:3, M15:4, M5:3, M1:3};
+const TF_PASS= {H4:3, H1:3, M30:3, M15:4, M5:3, M1:3};
+
+// Indicator descriptions per TF
+const TF_INDS = {
+  H4:  ['Ichimoku Kinko Hyo','EMA 50','MACD (12,26,9)'],
+  H1:  ['Hull MA 21','MACD (5,34,5)','ATR 14'],
+  M30: ['Parabolic SAR (0.02,0.2)','CCI 14','RSI 9'],
+  M15: ['EMA 21 & 50','EMA 21 > EMA 50','Stoch (14,3,3)','ATR 14'],
+  M5:  ['Stoch (5,3,3)','RSI 7','Fibonacci 61.8%-78.6%'],
+  M1:  ['Stoch (5,3,3)','Linear Regression','Bollinger Bands (20,2)'],
+};
 
 const S = {
   trades:[], equity:[500], capital:500,
@@ -331,15 +341,24 @@ function updateTFDetail(){
     const confirmed=sc[tf];
     const pct=max>0?(score/max)*100:0;
     const color=confirmed?'var(--green)':score>0?'var(--red)':'var(--muted)';
+    const inds=TF_INDS[tf]||[];
 
     const row=document.createElement('div');
     row.className='tf-line';
+    row.style.flexDirection='column';
+    row.style.gap='4px';
+    row.style.marginBottom='8px';
     row.innerHTML=`
-      <span class="tf-name">${tf}</span>
-      <div class="tf-score-bar">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="tf-name" style="font-weight:600;color:${confirmed?'var(--green)':'var(--text)'}">${tf}</span>
+        <span style="font-size:.58rem;color:${color}">${score}/${max} <span style="color:var(--muted)">(need ${pass})</span></span>
+      </div>
+      <div class="tf-score-bar" style="margin:0">
         <div class="tf-score-fill ${confirmed?'green':'red'}" style="width:${pct}%"></div>
       </div>
-      <span class="tf-score-num" style="color:${color}">${score}/${max} <span style="color:var(--muted);font-size:.5rem">(need ${pass})</span></span>
+      <div style="font-size:.55rem;color:var(--muted);line-height:1.6">
+        ${inds.map((ind,i)=>`<span style="color:${i<score?'var(--text)':'var(--muted)'}">${i<score?'✓':' ○'} ${ind}</span>`).join('<br>')}
+      </div>
     `;
     detail.appendChild(row);
   });
@@ -561,7 +580,7 @@ function startSim(){
       const sc={isBuy,ready:false};
       let allOk=true;
       TFS.forEach(tf=>{
-        const ok=allOk&&Math.random()>0.35;
+        const ok=allOk&&Math.random()>0.4;
         sc[tf]=ok;
         sc[tf+'score']=ok?TF_MAX[tf]:Math.floor(Math.random()*TF_PASS[tf]);
         if(!ok) allOk=false;
