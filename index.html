@@ -241,7 +241,8 @@ tbody td{padding:7px 10px;}
 <script>
 const PAIRS = ['XAUUSD','EURUSD','GBPUSD','USDCHF','USDJPY','USDCNH'];
 const TFS   = ['H4','H1','M30','M15','M5','M1'];
-const TF_MAX= {H4:5, H1:6, M30:3, M15:3, M5:6, M1:3};
+const TF_MAX = {H4:5, H1:6, M30:3, M15:3, M5:6, M1:3};
+const TF_PASS= {H4:4, H1:5, M30:3, M15:3, M5:5, M1:3}; // Pass threshold per TF
 
 const S = {
   trades:[], equity:[500], capital:500,
@@ -326,8 +327,10 @@ function updateTFDetail(){
   TFS.forEach(tf=>{
     const score=sc[tf+'score']||0;
     const max=TF_MAX[tf];
+    const pass=TF_PASS[tf];
     const confirmed=sc[tf];
     const pct=max>0?(score/max)*100:0;
+    const color=confirmed?'var(--green)':score>0?'var(--red)':'var(--muted)';
 
     const row=document.createElement('div');
     row.className='tf-line';
@@ -336,7 +339,7 @@ function updateTFDetail(){
       <div class="tf-score-bar">
         <div class="tf-score-fill ${confirmed?'green':'red'}" style="width:${pct}%"></div>
       </div>
-      <span class="tf-score-num" style="color:${confirmed?'var(--green)':'var(--muted)'}">${score}/${max}</span>
+      <span class="tf-score-num" style="color:${color}">${score}/${max} <span style="color:var(--muted);font-size:.5rem">(need ${pass})</span></span>
     `;
     detail.appendChild(row);
   });
@@ -350,7 +353,10 @@ function updateTFDetail(){
 
   TFS.forEach(tf=>{
     const ok=sc2[tf];
-    html+=`<div style="color:${ok?'var(--green)':'var(--muted)'}">${ok?'✓':'○'} ${tf} ${ok?'CONFIRMED':'waiting...'}</div>`;
+    const score=sc2[tf+'score']||0;
+    const pass=TF_PASS[tf];
+    const max=TF_MAX[tf];
+    html+=`<div style="color:${ok?'var(--green)':'var(--muted)'}">${ok?'✓':'○'} ${tf} ${score}/${max} ${ok?'✅ PASS':'(need '+pass+')'}</div>`;
   });
 
   if(sc2.ready){
@@ -557,7 +563,7 @@ function startSim(){
       TFS.forEach(tf=>{
         const ok=allOk&&Math.random()>0.35;
         sc[tf]=ok;
-        sc[tf+'score']=ok?TF_MAX[tf]:Math.floor(Math.random()*TF_MAX[tf]);
+        sc[tf+'score']=ok?TF_MAX[tf]:Math.floor(Math.random()*TF_PASS[tf]);
         if(!ok) allOk=false;
       });
       sc.ready=sc.M1;
